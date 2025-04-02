@@ -58,6 +58,24 @@ bool Ota::CheckVersion() {
     }
 
     auto response = http->GetBody();
+
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+    // 自己的OTA版本检测
+    std::string self_url = "https://dock-update.myvobot.com/checkUpgrades";
+    self_url += "?deviceId=" + SystemInfo::GetDeviceId();
+    self_url += "&deviceType=Vobot_AI&types=system,app,mcu&versions=" + current_version_;
+    self_url += ",0.1.0,0.1.0";
+    if (!http->Open("GET", self_url)) {
+        ESP_LOGE(TAG, "Failed to open HTTP connection");
+        http->Close();
+        delete http;
+        return true;
+    }
+
+    auto self_response = http->GetBody();
+    ESP_LOGI(TAG, "Self Check version response: %s", self_response.c_str());
+#endif
+
     http->Close();
     delete http;
 
@@ -123,6 +141,48 @@ bool Ota::CheckVersion() {
         }
     }
 
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+    // 自己的版本检查
+    cJSON *self_root = cJSON_Parse(self_response.c_str());
+    if (self_root == NULL) {
+        // 没有响应体？
+        ESP_LOGE(TAG, "Failed to parse JSON response");
+        cJSON_Delete(root);
+        return false;
+    } else if (!cJSON_IsArray(self_root)) {
+        // 检查是否是数组
+        ESP_LOGE(TAG, "JSON response is not an array");
+        cJSON_Delete(root);
+        cJSON_Delete(self_root);
+        return false;
+    }
+
+    // 获取数组中的第一个对象
+    cJSON *first_item = cJSON_GetArrayItem(self_root, 0);
+    if (first_item == NULL) {
+        ESP_LOGE(TAG, "Failed to get first item from array");
+        cJSON_Delete(root);
+        cJSON_Delete(self_root);
+        return false;
+    }
+
+    cJSON *version = cJSON_GetObjectItem(first_item, "versionNumber");
+    if (version == NULL) {
+        ESP_LOGW(TAG, "Failed to get version object, maybe no new version");
+        cJSON_Delete(root);
+        cJSON_Delete(self_root);
+        return true;
+    }
+
+    cJSON *url = cJSON_GetObjectItem(first_item, "upgradeUrl");
+    if (url == NULL) {
+        ESP_LOGW(TAG, "Failed to get version object, maybe no new version");
+        cJSON_Delete(root);
+        cJSON_Delete(self_root);
+        return true;
+    }
+
+#else
     cJSON *firmware = cJSON_GetObjectItem(root, "firmware");
     if (firmware == NULL) {
         ESP_LOGE(TAG, "Failed to get firmware object");
@@ -141,10 +201,14 @@ bool Ota::CheckVersion() {
         cJSON_Delete(root);
         return false;
     }
+#endif
 
     firmware_version_ = version->valuestring;
     firmware_url_ = url->valuestring;
     cJSON_Delete(root);
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+    cJSON_Delete(self_root);
+#endif
 
     // Check if the version is newer, for example, 0.1.0 is newer than 0.0.1
     has_new_version_ = IsNewVersionAvailable(current_version_, firmware_version_);

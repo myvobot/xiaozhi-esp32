@@ -42,7 +42,13 @@ void WifiBoard::EnterWifiConfigMode() {
 
     auto& wifi_ap = WifiConfigurationAp::GetInstance();
     wifi_ap.SetLanguage(Lang::CODE);
+
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+    wifi_ap.SetSsidPrefix("Vobot");
+#else
     wifi_ap.SetSsidPrefix("Xiaozhi");
+#endif
+
     wifi_ap.Start();
 
     // 显示 WiFi 配置 AP 的 SSID 和 Web 服务器 URL

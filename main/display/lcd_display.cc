@@ -180,7 +180,11 @@ RgbLcdDisplay::RgbLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
     const lvgl_port_display_cfg_t display_cfg = {
         .io_handle = panel_io_,
         .panel_handle = panel_,
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+        .buffer_size = static_cast<uint32_t>(width_ * 90),
+#else
         .buffer_size = static_cast<uint32_t>(width_ * 10),
+#endif
         .double_buffer = true,
         .hres = static_cast<uint32_t>(width_),
         .vres = static_cast<uint32_t>(height_),
