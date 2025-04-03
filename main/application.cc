@@ -596,7 +596,14 @@ void Application::AudioLoop() {
 void Application::OnAudioOutput() {
     auto now = std::chrono::steady_clock::now();
     auto codec = Board::GetInstance().GetAudioCodec();
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+    // VOBOT-Global-ESP32S3 板子版本检测需要调用两次接口
+    // 若为10秒,则有概率出现关闭音频输出后才播放P3_SUCCESS的提示音
+    // 而版本检测的任务不应该影响到程序的正常运行,因此通过设置为20秒来降低现象的出现
+    const int max_silence_seconds = 20;
+#else
     const int max_silence_seconds = 10;
+#endif
 
     std::unique_lock<std::mutex> lock(mutex_);
     if (audio_decode_queue_.empty()) {
