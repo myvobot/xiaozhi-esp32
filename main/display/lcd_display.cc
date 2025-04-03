@@ -111,7 +111,11 @@ SpiLcdDisplay::SpiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
         .io_handle = panel_io_,
         .panel_handle = panel_,
         .control_handle = nullptr,
+#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
+        .buffer_size = static_cast<uint32_t>(width_ * 90),
+#else
         .buffer_size = static_cast<uint32_t>(width_ * 10),
+#endif
         .double_buffer = false,
         .trans_size = 0,
         .hres = static_cast<uint32_t>(width_),
@@ -180,11 +184,7 @@ RgbLcdDisplay::RgbLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
     const lvgl_port_display_cfg_t display_cfg = {
         .io_handle = panel_io_,
         .panel_handle = panel_,
-#if CONFIG_BOARD_TYPE_VOBOT_GLOBAL_ESP32S3
-        .buffer_size = static_cast<uint32_t>(width_ * 90),
-#else
         .buffer_size = static_cast<uint32_t>(width_ * 10),
-#endif
         .double_buffer = true,
         .hres = static_cast<uint32_t>(width_),
         .vres = static_cast<uint32_t>(height_),
@@ -260,6 +260,34 @@ bool LcdDisplay::Lock(int timeout_ms) {
 
 void LcdDisplay::Unlock() {
     lvgl_port_unlock();
+}
+
+void LcdDisplay::SetDisplayMode(DisplayMode mode) {
+    DisplayLockGuard lock(this);
+    // 容器为空,则不进行任何操作
+    if (content_ == nullptr) return;
+
+    // 清空子控件
+    lv_obj_clean(content_);
+    emotion_label_ = nullptr;
+    chat_message_label_ = nullptr;
+
+    // 正常模式,才展示表情
+    if (mode == kDisplayModeNormal) {
+        // 表情控件初始化
+        emotion_label_ = lv_label_create(content_);
+        lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
+        lv_obj_set_style_text_color(emotion_label_, current_theme.text, 0);
+        lv_label_set_text(emotion_label_, FONT_AWESOME_AI_CHIP);
+    }
+
+    // 信息控件初始化
+    chat_message_label_ = lv_label_create(content_);
+    lv_label_set_text(chat_message_label_, "");
+    lv_obj_set_width(chat_message_label_, LV_HOR_RES * 0.9); // 限制宽度为屏幕宽度的 90%
+    lv_label_set_long_mode(chat_message_label_, LV_LABEL_LONG_WRAP); // 设置为自动换行模式
+    lv_obj_set_style_text_align(chat_message_label_, LV_TEXT_ALIGN_CENTER, 0); // 设置文本居中对齐
+    lv_obj_set_style_text_color(chat_message_label_, current_theme.text, 0);
 }
 
 #if CONFIG_USE_WECHAT_MESSAGE_STYLE

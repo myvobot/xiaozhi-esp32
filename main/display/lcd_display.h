@@ -33,6 +33,7 @@ protected:
     
 public:
     ~LcdDisplay();
+    virtual void SetDisplayMode(DisplayMode mode) override;
     virtual void SetEmotion(const char* emotion) override;
     virtual void SetIcon(const char* icon) override;
 #if CONFIG_USE_WECHAT_MESSAGE_STYLE

@@ -38,6 +38,9 @@ std::string WifiBoard::GetBoardType() {
 
 void WifiBoard::EnterWifiConfigMode() {
     auto& application = Application::GetInstance();
+    auto display = Board::GetInstance().GetDisplay();
+    display->SetDisplayMode(kDisplayModeWifiConfiguring);
+
     application.SetDeviceState(kDeviceStateWifiConfiguring);
 
     auto& wifi_ap = WifiConfigurationAp::GetInstance();
@@ -85,6 +88,9 @@ void WifiBoard::StartNetwork() {
         EnterWifiConfigMode();
         return;
     }
+
+    auto display = Board::GetInstance().GetDisplay();
+    display->SetDisplayMode(kDisplayModeNormal);
 
     auto& wifi_station = WifiStation::GetInstance();
     wifi_station.OnScanBegin([this]() {

@@ -42,6 +42,11 @@ enum DeviceState {
     kDeviceStateFatalError
 };
 
+enum DisplayMode {
+    kDisplayModeNormal,
+    kDisplayModeWifiConfiguring,
+};
+
 #define OPUS_FRAME_DURATION_MS 60
 
 class Application {

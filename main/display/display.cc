@@ -91,6 +91,10 @@ void Display::SetStatus(const char* status) {
     lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
 }
 
+void Display::SetDisplayMode(DisplayMode mode) {
+    ESP_LOGW(TAG, "Does the current display not support setting the display mode?");
+}
+
 void Display::ShowNotification(const std::string &notification, int duration_ms) {
     ShowNotification(notification.c_str(), duration_ms);
 }
